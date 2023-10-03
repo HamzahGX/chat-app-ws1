@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,12 +10,16 @@
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script defer src="app.js"></script>
 </head>
-
 <body>
     <h1>Welcome to Chatterbox</h1>
-    <form>
-        <input type="text" placeholder="Your message">
-        <button>Send</button>
+    <form id="auth-form">
+        <label form="username">Enter Your Username:</label>
+        <input type="text" id="username" name="username" required>
+        <button type="submit">Authenticate</button>
+    </form>
+    <form id="message-form"> 
+        <input type="text" id="message-input" placeholder="Your message">
+        <button id="send-button">Send</button> 
     </form>
     <ul></ul>
     <p class="activity"></p>
