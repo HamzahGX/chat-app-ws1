@@ -9,12 +9,18 @@
         integrity="sha512-Xm9qbB6Pu06k3PUwPj785dyTl6oHxgsv9nHp7ej7nCpAqGZT3OZpsELuCYX05DdonFpTlBpXMOxjavIAIUwr0w=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script defer src="app.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+
 </head>
 <body>
+    <div class="container">
     <h1>Welcome to Chatterbox</h1>
+    <!-- Add this input field to your form -->
+<input type="email" id="recipient-email" placeholder="Please Enter Your Email" required />
+
     <form id="auth-form">
-        <label form="username">Enter Your Username:</label>
-        <input type="text" id="username" name="username" required>
+        <label form="username"></label>
+        <input type="text" id="username" placeholder="Enter Your Username..." name="username" required>
         <button type="submit">Authenticate</button>
     </form>
     <form id="message-form"> 
@@ -23,6 +29,7 @@
     </form>
     <ul></ul>
     <p class="activity"></p>
+</div>
 </body>
 
 </html>

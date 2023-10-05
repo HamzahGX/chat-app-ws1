@@ -2,8 +2,10 @@ import express from 'express';
 import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import moment from 'moment';
+import winston from 'winston';
+import cron from 'node-cron';
 
-// Define __filename and __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -14,7 +16,17 @@ const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 
 const expressServer = app.listen(PORT, () => {
-    console.log(`listening on port ${PORT}`);
+    console.log(`Listening on port ${PORT}`);
+});
+
+const logger = winston.createLogger({
+    level: 'info',
+    format: winston.format.json(),
+    defaultMeta: { service: 'chatterbox' },
+    transports: [
+        new winston.transports.Console(),
+        new winston.transports.File({ filename: 'chatterbox.log' }),
+    ],
 });
 
 const io = new Server(expressServer, {
@@ -23,42 +35,72 @@ const io = new Server(expressServer, {
     },
 });
 
-// Create an array to store authenticated usernames
 const authenticatedUsers = [];
 
-io.on('connection', (socket) => {
-    console.log(`User ${socket.id} connected`);
+cron.schedule('*/10 * * * *', () => {
+    io.sockets.sockets.forEach((socket) => {
+        const currentTime = moment();
+        const lastActivityTime = moment(socket.lastActivity || 0);
+        const inactiveDuration = moment.duration(currentTime.diff(lastActivityTime)).asMinutes();
 
-    // Handle username authentication
+        if (inactiveDuration >= 10) {
+            socket.emit('popUpMessage', 'You have been inactive for too long.');
+        }
+    });
+
+    console.log('Checking user activity...');
+    logger.info('Checking user activity...');
+});
+
+import i18next from 'i18next';
+import Backend from 'i18next-node-fs-backend';
+import i18nextMiddleware from 'i18next-express-middleware';
+
+i18next
+    .use(Backend)
+    .use(i18nextMiddleware.LanguageDetector)
+    .init({
+        backend: {
+            loadPath: path.join(__dirname, 'locales/{{lng}}/{{ns}}.json'),
+        },
+        supportedLngs: ['en', 'fr', 'es'],
+        fallbackLng: 'en',
+        preload: ['en'],
+        ns: ['common'],
+        defaultNS: 'common',
+        debug: false,
+    });
+
+app.use(i18nextMiddleware.handle(i18next));
+
+io.on('connection', (socket) => {
+    const formattedConnectionTime = moment().format('HH:mm:ss');
+
+    console.log(`User ${socket.id} connected at ${formattedConnectionTime}`);
+
     socket.on('authenticate', (username) => {
         if (authenticatedUsers.includes(username)) {
-            // Username is already taken
             socket.emit('authenticationError', 'Username is already taken. Please choose another.');
         } else {
-            // Store the authenticated username and inform the client
             authenticatedUsers.push(username);
             socket.emit('authenticationSuccess', `Welcome, ${username}!`);
         }
     });
 
-    // Upon connection - only to user
     socket.emit('username', 'Hello and welcome to Chatterbox!');
 
-    // Upon connection - to all others
-    socket.broadcast.emit('message', `User ${socket.id.substring(0, 5)} connected`);
+    socket.broadcast.emit('message', `User ${socket.id.substring(0, 5)} connected at ${formattedConnectionTime}`);
 
-    // Listening for a message event
     socket.on('message', (data) => {
-        console.log(data);
-        io.emit('message', { username: data.username, message: data.message }); // Include username
+        const formattedTime = moment().format('HH:mm:ss');
+        const messageWithTime = `${formattedTime} - ${data.username}: ${data.message}`;
+        io.emit('message', { username: data.username, message: messageWithTime });
     });
 
-    // When a user disconnects - to all others
     socket.on('disconnect', () => {
         socket.broadcast.emit('message', `User ${socket.id.substring(0, 5)} disconnected`);
     });
 
-    // Listen for activity
     socket.on('activity', (name) => {
         socket.broadcast.emit('activity', name);
     });
