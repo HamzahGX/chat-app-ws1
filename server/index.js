@@ -84,12 +84,11 @@ io.on('connection', (socket) => {
         } else {
             authenticatedUsers.push(username);
             socket.emit('authenticationSuccess', `Welcome, ${username}!`);
+            io.emit('username', `Hello and welcome to Chatterbox, ${username}!`);
+            
+            socket.broadcast.emit('message', `User ${username} connected.`);
         }
     });
-
-    socket.emit('username', 'Hello and welcome to Chatterbox!');
-
-    socket.broadcast.emit('message', `User ${socket.id.substring(0, 5)} connected at ${formattedConnectionTime}`);
 
     socket.on('message', (data) => {
         const formattedTime = moment().format('HH:mm:ss');
@@ -98,7 +97,10 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        socket.broadcast.emit('message', `User ${socket.id.substring(0, 5)} disconnected`);
+        const username = authenticatedUsers.find((user) => io.sockets.sockets.get(user).id === socket.id);
+        if (username) {
+            socket.broadcast.emit('message', `User ${username} disconnected.`);
+        }
     });
 
     socket.on('activity', (name) => {

@@ -4,6 +4,7 @@ const activity = document.querySelector('.activity');
 const msgInput = document.querySelector('#message-input');
 const sendButton = document.querySelector('#send-button');
 const usernameInput = document.getElementById('username');
+const emailForm = document.getElementById('email-form'); 
 
 let username = '';
 
@@ -57,4 +58,13 @@ socket.on('activity', (username) => {
 
 socket.on('popUpMessage', (message) => {
     alert(message);
+});
+
+emailForm.addEventListener('submit', function (e) {
+    e.preventDefault(); 
+
+    const email = document.getElementById('recipient-email').value;
+
+
+    alert(`Email submitted: ${email}`);
 });
