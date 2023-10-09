@@ -91,15 +91,23 @@ io.on('connection', (socket) => {
     });
 
     socket.on('message', (data) => {
-        const formattedTime = moment().format('HH:mm:ss');
+        const formattedTime = moment().format('YYYY-MM-DD HH:mm:ss');
         const messageWithTime = `${formattedTime} - ${data.username}: ${data.message}`;
         io.emit('message', { username: data.username, message: messageWithTime });
     });
 
     socket.on('disconnect', () => {
-        const username = authenticatedUsers.find((user) => io.sockets.sockets.get(user).id === socket.id);
+        const username = authenticatedUsers.find((user) => {
+            const userSocket = io.sockets.sockets.get(user);
+            return userSocket && userSocket.id === socket.id;
+        });
+
         if (username) {
             socket.broadcast.emit('message', `User ${username} disconnected.`);
+            const index = authenticatedUsers.indexOf(username);
+            if (index !== -1) {
+                authenticatedUsers.splice(index, 1);
+            }
         }
     });
 
